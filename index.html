@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Photo Sharer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    
+    .main-container {
+      position: relative;
+      z-index: 1;
+      backdrop-filter: blur(10px);
+      background: rgba(31, 41, 55, 0.8);
+      border: 1px solid rgba(75, 85, 99, 0.3);
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    
+    .upload-area {
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(31, 41, 55, 0.8) 100%);
+    }
+    
+    .upload-area:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+    
+    .upload-area.dragover {
+      border-color: #6366f1;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+      transform: scale(1.02);
+    }
+    
+    .upload-button {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .upload-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .upload-button:hover::before {
+      left: 100%;
+    }
+    
+    .upload-button:hover {
+      background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+    }
+    
+    .get-link-button {
+      background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .get-link-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .get-link-button:hover::before {
+      left: 100%;
+    }
+    
+    .get-link-button:hover {
+      background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px -5px rgba(20, 184, 166, 0.4);
+    }
+    
+    .status-message {
+      animation: fadeInUp 0.5s ease-out;
+    }
+    
+    .link-container {
+      background: linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(31, 41, 55, 0.8) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .link-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #6366f1, transparent);
+    }
+    
+    .link-url {
+      transition: all 0.3s ease;
+      word-break: break-all;
+    }
+    
+    .link-url:hover {
+      color: #a5b4fc !important;
+      text-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+    }
+    
+    .number-input {
+      background: linear-gradient(135deg, rgba(55, 65, 81, 0.8) 0%, rgba(31, 41, 55, 0.8) 100%);
+      border: 1px solid rgba(75, 85, 99, 0.5);
+      transition: all 0.3s ease;
+    }
+    
+    .number-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      background: linear-gradient(135deg, rgba(55, 65, 81, 0.9) 0%, rgba(31, 41, 55, 0.9) 100%);
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+    
+    .loading {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    .title {
+      background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .subtitle {
+      color: #94a3b8;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
+
+  <div class="main-container bg-gray-800 p-8 rounded-2xl shadow-xl w-full max-w-md border-2 border-gray-700">
+    <h1 class="title text-3xl font-bold text-center mb-2">Photo Sharer</h1>
+    <p class="subtitle text-gray-400 text-center mb-6">Upload a photo and get an expiring link.</p>
+
+    <!-- Upload Section -->
+    <div class="flex flex-col items-center space-y-4">
+      <label for="fileInput" class="upload-area w-full text-center py-4 px-6 bg-gray-700 rounded-xl cursor-pointer hover:bg-gray-600 transition-colors duration-200 ease-in-out border-2 border-dashed border-gray-600">
+        <span id="fileLabel" class="text-gray-400">Click to select photo</span>
+      </label>
+      <input type="file" id="fileInput" class="hidden" accept="image/*">
+      
+      <button id="uploadButton" onclick="uploadFile()" class="upload-button w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-indigo-700 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 disabled:bg-gray-600 disabled:cursor-not-allowed">
+        Upload Photo
+      </button>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="status" class="status-message mt-6 text-center text-sm font-medium"></div>
+
+    <!-- Expiring Link Section -->
+    <div id="expiringLinkSection" class="mt-8 hidden">
+      <p class="text-gray-400 text-center mb-4">Set link expiration time (seconds):</p>
+      <div class="flex items-center space-x-2">
+        <input type="number" id="expiresIn" value="3600" min="60" class="number-input w-full text-gray-100 bg-gray-700 border-2 border-gray-600 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
+        <button onclick="getExpiringLink()" class="get-link-button flex-shrink-0 bg-teal-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-teal-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50">
+          Get Link
+        </button>
+      </div>
+      <div id="downloadLink" class="mt-4 text-center text-sm font-medium"></div>
+    </div>
+  </div>
+
+  <script>
+    // IMPORTANT: Replace this with your Lambda Function URL
+    const combinedLambdaUrl = "https://awyuwfxxdqfuijnjox3aaop3la0kszic.lambda-url.eu-north-1.on.aws/";
+    
+    const statusElement = document.getElementById('status');
+    const downloadLinkElement = document.getElementById('downloadLink');
+    const fileInput = document.getElementById('fileInput');
+    const fileLabel = document.getElementById('fileLabel');
+    const uploadButton = document.getElementById('uploadButton');
+    const expiringLinkSection = document.getElementById('expiringLinkSection');
+    let uploadedFileName = null;
+    let selectedFile = null;
+
+    fileInput.addEventListener('change', (e) => {
+        selectedFile = e.target.files[0];
+        if (selectedFile) {
+            fileLabel.textContent = selectedFile.name;
+            uploadButton.disabled = false;
+        } else {
+            fileLabel.textContent = 'Click to select photo';
+            uploadButton.disabled = true;
+        }
+    });
+
+    async function uploadFile() {
+        if (!selectedFile) {
+            statusElement.innerHTML = '<span class="text-red-500">Please select a file first.</span>';
+            return;
+        }
+
+        // Disable button and show a clear loading state
+        uploadButton.disabled = true;
+        statusElement.innerHTML = '<span class="text-indigo-400">Getting upload URL...</span>';
+
+        try {
+            // First, request a pre-signed URL from the Lambda function
+            const response = await fetch(combinedLambdaUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    key: selectedFile.name, 
+                    type: 'upload',
+                    expires: 300 
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorData.message}`);
+            }
+            
+            const data = await response.json();
+            const { url } = data;
+
+            // Update status to show that the upload is in progress
+            statusElement.innerHTML = '<span class="text-indigo-400">Uploading photo...</span>';
+
+            // Use the pre-signed URL to upload the file directly to S3
+            const uploadResponse = await fetch(url, {
+                method: 'PUT',
+                body: selectedFile,
+            });
+
+            // Check if the S3 upload was successful
+            if (uploadResponse.ok) {
+                statusElement.innerHTML = `<span class="text-green-500">Upload successful!</span>`;
+                uploadedFileName = selectedFile.name;
+                expiringLinkSection.classList.remove('hidden');
+                downloadLinkElement.innerHTML = '';
+            } else {
+                statusElement.innerHTML = `<span class="text-red-500">Upload to S3 failed. Please check S3 bucket permissions.</span>`;
+            }
+        } catch (error) {
+            console.error('Fetch error:', error);
+            // Provide a more generic error message for network or permission issues
+            statusElement.innerHTML = `<span class="text-red-500">Error: Failed to get upload URL or upload file. Please check your network and S3 bucket settings.</span>`;
+        } finally {
+            uploadButton.disabled = false;
+        }
+    }
+
+    async function getExpiringLink() {
+        if (!uploadedFileName) {
+            downloadLinkElement.innerHTML = '<span class="text-red-500">Please upload a file first.</span>';
+            return;
+        }
+
+        downloadLinkElement.innerHTML = '<span class="text-indigo-400">Generating expiring link...</span>';
+        
+        const expiresIn = document.getElementById('expiresIn').value;
+        const key = uploadedFileName;
+
+        try {
+            const response = await fetch(combinedLambdaUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: key, type: 'download', expires: expiresIn }),
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorData.message}`);
+            }
+            
+            const data = await response.json();
+            const expiringUrl = data.url;
+
+            downloadLinkElement.innerHTML = `
+                <div class="link-container p-4 bg-gray-700 rounded-xl">
+                    <p class="text-gray-400">Share this time-limited link:</p>
+                    <a href="${expiringUrl}" target="_blank" class="link-url block mt-2 text-indigo-400 underline truncate hover:text-indigo-300">
+                        ${expiringUrl}
+                    </a>
+                    <p class="text-xs text-gray-500 mt-1">This link will expire in ${Math.round(expiresIn / 60)} minutes.</p>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Fetch error:', error);
+            downloadLinkElement.innerHTML = '<span class="text-red-500">Error: Failed to generate expiring link.</span>';
+        }
+    }
+  </script>
+
+</body>
+</html>
