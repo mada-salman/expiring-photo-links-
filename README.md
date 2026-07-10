@@ -1,34 +1,60 @@
-# Expiring Photo Links
+# Photo Sharer - Expiring Photo Links
 
-A secure photo sharing application built on AWS that generates temporary, expiring links for safe and private photo access.
+A lightweight, serverless photo sharing application that generates secure, time-limited download links. Upload a photo and instantly get an expiring link to share safely.
 
 ## Overview
 
-Expiring Photo Links is a cloud-based solution for sharing photos securely. It leverages AWS S3 and presigned URLs to provide time-limited access to photos, ensuring privacy and automatic expiration without manual cleanup.
+Photo Sharer is a minimalist, privacy-first photo sharing application built on AWS serverless infrastructure. It allows users to:
+- Upload photos directly to Amazon S3
+- Generate time-limited presigned URLs for safe sharing
+- Control link expiration time (in seconds)
+- Share photos without storing them permanently accessible
+
+Perfect for sharing sensitive photos, temporary file transfers, or confidential images that should self-destruct after a set time.
 
 ## Features
 
-- **Secure Sharing**: Generate secure, temporary links for photo access
-- **Automatic Expiration**: Links automatically expire after a configurable time period
-- **AWS S3 Integration**: Leverages AWS S3 for scalable photo storage
-- **Presigned URLs**: Uses AWS presigned URLs for secure, temporary access
-- **Privacy First**: Photos remain private in S3; access is controlled through temporary tokens
-- **Scalable**: Built on AWS infrastructure for reliable, scalable performance
+✨ **Key Features:**
+- **One-Click Upload**: Select and upload photos with a single click
+- **Customizable Link Expiration**: Set expiration time from 60 seconds to any duration
+- **Presigned URLs**: Generate AWS S3 presigned URLs for secure, time-limited access
+- **No Database Required**: Serverless architecture using AWS Lambda and S3
+- **Beautiful UI**: Modern, responsive interface with Tailwind CSS
+- **Real-time Status**: Live feedback during upload and link generation
+- **Privacy-Focused**: Photos are stored privately in S3; access controlled via presigned URLs
 
 ## Tech Stack
 
-- **Frontend**: HTML5, JavaScript
-- **Backend**: AWS Lambda, AWS API Gateway (optional)
-- **Storage**: AWS S3
-- **Authentication**: AWS IAM
+- **Frontend**: HTML5, JavaScript, Tailwind CSS
+- **Backend**: AWS Lambda (serverless function)
+- **Storage**: Amazon S3
+- **Architecture**: Serverless (no servers to manage)
 
-## Prerequisites
+## How It Works
 
-- AWS Account with access to S3
-- Node.js (for local development)
-- AWS CLI configured with appropriate credentials
+1. **Upload Phase**: 
+   - User selects a photo file
+   - Frontend requests a presigned upload URL from Lambda
+   - File is uploaded directly to S3 using the presigned URL
 
-## Installation
+2. **Link Generation Phase**:
+   - User sets desired link expiration time (default: 3600 seconds / 1 hour)
+   - Lambda generates a presigned download URL
+   - URL is displayed and ready to share
+
+3. **Expiration**:
+   - AWS automatically invalidates the presigned URL after the specified time
+   - Link becomes inaccessible without regeneration
+
+## Getting Started
+
+### Prerequisites
+
+- AWS Account with Lambda and S3 access
+- A web browser
+- An AWS Lambda function URL (see setup below)
+
+### Installation
 
 1. **Clone the repository**
    ```bash
@@ -36,124 +62,189 @@ Expiring Photo Links is a cloud-based solution for sharing photos securely. It l
    cd expiring-photo-links-
    ```
 
-2. **Set up AWS S3**
-   - Create an S3 bucket for storing photos
-   - Configure bucket policies for presigned URL access
-   - Enable CORS if needed for web access
+2. **Deploy Lambda Backend** (Required)
+   - You need a Lambda function that handles:
+     - Generating presigned upload URLs
+     - Generating presigned download URLs
+   - Create a Lambda function and get its Function URL
 
-3. **Configure AWS credentials**
-   ```bash
-   aws configure
-   ```
+3. **Configure Frontend**
+   - Open `index.html` in a text editor
+   - Find line 232: `const combinedLambdaUrl = "..."`
+   - Replace with your Lambda Function URL
 
-4. **Run locally**
-   - Open `index.html` in your browser
-   - Or use a local server:
-   ```bash
-   python -m http.server 8000
-   # or
-   npx http-server
-   ```
+4. **Host the Frontend**
+   - Option A: Host on AWS S3 with CloudFront
+   - Option B: Deploy to any static hosting (GitHub Pages, Netlify, Vercel)
+   - Option C: Open `index.html` locally in your browser
+
+### Quick Setup (Local Testing)
+
+```bash
+# Start a local web server
+python -m http.server 8000
+# or
+npx http-server
+
+# Visit http://localhost:8000
+```
 
 ## Usage
 
-### Generating Expiring Links
+### For End Users
 
-1. Upload a photo to your S3 bucket
-2. Use the application to generate a presigned URL with your desired expiration time
-3. Share the generated link with recipients
-4. The link will automatically expire after the specified duration
+1. **Upload a Photo**
+   - Click "Click to select photo" or drag and drop
+   - Click "Upload Photo"
+   - Wait for success message
 
-### Example
+2. **Generate Expiring Link**
+   - Set expiration time in seconds (default: 3600 = 1 hour)
+   - Click "Get Link"
+   - Share the generated link
+   - Link automatically expires after the set time
 
-```javascript
-// Generate a presigned URL that expires in 1 hour
-const expirationTime = 3600; // seconds
-const link = generatePresignedUrl(bucketName, photoKey, expirationTime);
+### Example Expiration Times
+- 300 seconds = 5 minutes
+- 1800 seconds = 30 minutes
+- 3600 seconds = 1 hour (default)
+- 86400 seconds = 1 day
+
+## Lambda Backend Requirements
+
+Your Lambda function should accept POST requests with:
+
+```json
+{
+  "key": "filename.jpg",
+  "type": "upload",      // or "download"
+  "expires": 300
+}
+```
+
+And return:
+
+```json
+{
+  "url": "https://s3.amazonaws.com/bucket/file?X-Amz-Signature=..."
+}
 ```
 
 ## Configuration
 
-Configure the following environment variables or settings:
+The frontend is configured via a single variable in `index.html`:
 
-- `AWS_S3_BUCKET`: Your S3 bucket name
-- `AWS_REGION`: AWS region (e.g., us-east-1)
-- `LINK_EXPIRATION_TIME`: Default expiration time in seconds (default: 3600)
+```javascript
+const combinedLambdaUrl = "https://your-lambda-function-url.lambda-url.region.on.aws/";
+```
 
-## Security
-
-- Photos remain private in S3 and are not publicly accessible
-- Access is controlled through AWS presigned URLs
-- Links automatically expire, preventing indefinite access
-- Implement additional authentication as needed for your use case
+This URL should point to your deployed AWS Lambda function.
 
 ## File Structure
 
 ```
 expiring-photo-links-/
-├── index.html          # Main application interface
+├── index.html         # Frontend application (all-in-one file)
 ├── README.md          # This file
-└── .gitignore         # Git ignore rules
+└── .gitignore
 ```
 
-## Development
+## Security Considerations
 
-### Local Testing
+🔒 **Security Features:**
+- **Private Storage**: Photos stored privately in S3 bucket
+- **Presigned URLs**: Time-limited access tokens instead of permanent links
+- **No Permissions Needed**: Users don't need AWS credentials to download
+- **Automatic Expiration**: Links become inaccessible after expiration
+- **HTTPS Only**: Use HTTPS for all production deployments
 
-1. Install dependencies (if applicable)
-   ```bash
-   npm install
-   ```
+**Best Practices:**
+- Use CORS properly configured on Lambda/API Gateway
+- Ensure S3 bucket is NOT public
+- Monitor CloudTrail for unauthorized access attempts
+- Use CloudWatch for logging and alerts
+- Rotate AWS credentials regularly
+- Enable S3 encryption
 
-2. Set up local environment variables
-   ```bash
-   export AWS_S3_BUCKET=your-bucket-name
-   export AWS_REGION=us-east-1
-   ```
+## Deployment Options
 
-3. Start a local development server
-   ```bash
-   npm run dev
-   # or
-   python -m http.server 8000
-   ```
+### Option 1: AWS S3 + CloudFront (Recommended)
+```bash
+# Upload index.html to S3
+# Create CloudFront distribution
+# Use CloudFront URL for access
+```
 
-## Deployment
+### Option 2: AWS Amplify
+```bash
+# Connect GitHub repo to Amplify
+# Auto-deploys on push
+# Built-in HTTPS and CDN
+```
 
-For production deployment:
-
-1. **AWS Lambda**: Deploy serverless backend functions
-2. **CloudFront**: Use CloudFront for CDN distribution
-3. **API Gateway**: Set up API endpoints for photo operations
-4. **S3 Static Hosting**: Host frontend on S3 with CloudFront
-
-## Best Practices
-
-- Always use HTTPS for production
-- Implement proper AWS IAM roles and policies
-- Monitor S3 access with CloudTrail
-- Set up CloudWatch alerts for unusual activity
-- Regularly review and rotate AWS credentials
-- Use environment variables for sensitive configuration
+### Option 3: Other Hosting
+- GitHub Pages (static hosting)
+- Netlify (static hosting)
+- Vercel (static hosting)
+- Your own web server
 
 ## Troubleshooting
 
-### Presigned URLs Not Working
-- Verify AWS credentials are configured correctly
-- Check S3 bucket permissions and policies
-- Ensure the object exists in S3 before generating a presigned URL
+### "Error: Failed to get upload URL"
+- Check Lambda function URL is correct in `index.html`
+- Verify Lambda has S3 permissions (PutObject, GetObject)
+- Check CORS configuration on Lambda
 
-### CORS Issues
-- Configure S3 bucket CORS settings
-- Verify CORS headers are properly set
+### Upload Succeeds But Link Won't Work
+- Verify Lambda has GetObject permission on S3
+- Check S3 bucket name in Lambda function
+- Ensure S3 bucket is not public but Lambda can access it
 
-### Link Expiration Issues
-- Verify the expiration time format is in seconds
-- Check server time synchronization
+### Link Expires Immediately
+- Check Lambda time synchronization (should match AWS server time)
+- Verify `expires` parameter is in seconds, not milliseconds
+
+### Photos Not Appearing in S3
+- Verify S3 bucket name in Lambda
+- Check IAM permissions for Lambda role
+- Enable S3 access logging for debugging
+
+## Browser Compatibility
+
+- Chrome/Edge: ✅ Full support
+- Firefox: ✅ Full support
+- Safari: ✅ Full support
+- IE11: ❌ Not supported
+
+## Performance
+
+- **Upload**: Limited by file size and network speed
+- **Link Generation**: ~100-200ms (Lambda cold start may add 1-3 seconds)
+- **CDN**: Use CloudFront for global distribution
+
+## Development
+
+### Customization
+- Modify CSS in the `<style>` block for branding
+- Change color scheme (currently indigo/teal)
+- Adjust default expiration time (line 221)
+
+### Adding Features
+- Add photo preview before upload
+- Add multiple file upload support
+- Add photo gallery/history
+- Add authentication/user accounts
+
+## Limitations
+
+- Single file upload at a time
+- No built-in photo gallery/history
+- No user authentication
+- Frontend only (backend needed)
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions welcome! Please submit issues and pull requests.
 
 ## License
 
@@ -161,17 +252,18 @@ This project is open source and available under the MIT License.
 
 ## Support
 
-For issues, questions, or suggestions, please open an issue on the GitHub repository.
+For issues or questions:
+1. Check the troubleshooting section
+2. Open an issue on GitHub
+3. Review AWS Lambda and S3 documentation
 
-## Roadmap
+## Related Resources
 
-- [ ] User authentication
-- [ ] Photo upload interface
-- [ ] Link management dashboard
-- [ ] Analytics and logging
-- [ ] Mobile app support
-- [ ] Advanced access controls
+- [AWS Lambda Documentation](https://docs.aws.amazon.com/lambda/)
+- [Amazon S3 Documentation](https://docs.aws.amazon.com/s3/)
+- [AWS Presigned URLs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/PresignedUrlUploadObject.html)
+- [Tailwind CSS](https://tailwindcss.com/)
 
 ---
 
-**Built with ❤️ using AWS**
+**Built with AWS Serverless Architecture**
